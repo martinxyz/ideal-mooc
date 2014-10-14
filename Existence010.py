@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 stored_interactions = {} # experiment --> result
-selfSatisfactionCounter = 0
 selfSatisfiedDuration = 0
 experiment = 'e1'
 mood = 'self-satisfied'
