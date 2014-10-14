@@ -21,7 +21,7 @@ for cycle in range(11):
     # anticipate the stored result (possibly None)
     anticipatedResult = stored_interactions.get(experiment)
 
-	# this is Environment010
+    # this is Environment010
     if experiment == 'e1':
         result = 'r1'
     else:
