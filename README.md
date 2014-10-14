@@ -11,7 +11,8 @@ Usage
 =====
 
 On the commandline, run
-   python3 Existence010.py
+
+    python3 Existence010.py
 
 For now, that's all.   
 
