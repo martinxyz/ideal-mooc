@@ -3,7 +3,7 @@ ideal-mooc
 
 Programming exercises done during the IDEAL MOOC course. 
 
-The [original expercises](https://code.google.com/p/developmental-learning-tutorial/)
+The [original exercises](https://code.google.com/p/developmental-learning-tutorial/)
 are in Java, but this repository will be Python wherever practical.  I plan to sacrifice
 good coding style in favour of simplicity and readability.
 
