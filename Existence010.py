@@ -2,7 +2,6 @@
 
 stored_interactions = {} # experiment --> result
 selfSatisfiedDuration = 0
-experiment = 'e1'
 mood = 'self-satisfied'
 
 def pickExperiment(boring=None):
