@@ -8,49 +8,64 @@ interaction_valence = {
     }
 all_experiments = ['e1', 'e2']
 
-knownInteractions = []
+knownInteractions = {}
 def learnCompositeInteraction(contextInteraction, enactedInteraction):
     if contextInteraction is None:
         return
     ci = (contextInteraction, enactedInteraction)
-    if ci not in knownInteractions:
-        knownInteractions.append(ci)
+    knownInteractions[ci] = knownInteractions.get(ci, 0) + 1
 
 def anticipate(enactedInteraction):
-    anticipations = []
+    #print('knownInteractions:', knownInteractions)
+    anticipations = {} # experiment --> proclivity
     for ci in knownInteractions:
         if ci[0] == enactedInteraction:
-            anticipations.append(ci[1])
+            postInteraction = ci[1]
+            proposedExperiment = postInteraction[0]
+            weight = knownInteractions[ci]
+            proclivity = weight * interaction_valence[postInteraction]
+            anticipations[proposedExperiment] = anticipations.get(proposedExperiment, 0) + proclivity
     return anticipations
 
 def selectExperiment(anticipations):
     print('anticipations:', anticipations)
     if not anticipations:
         return all_experiments[0]
-    anticipations.sort(key=lambda a: interaction_valence[a])
-    experiment, result = anticipations[-1] # pick last (highest valence)
-    if interaction_valence[(experiment, result)] >= 0:
+    l = []
+    for experiment in anticipations:
+        proclivity = anticipations[experiment]
+        l.append((proclivity, experiment))
+    l.sort()
+    proclivity, experiment = l[-1] # pick last (highest proclivity)
+    if proclivity >= 0:
         return experiment
     else:
+        # return another experiment
         for e in all_experiments:
             if e != experiment:
                 return e
 
 def run():
     enactedInteraction = None
-    previousExperiment = None
 
-    for cycle in range(13):
+    for cycle in range(25):
         contextInteraction = enactedInteraction
         anticipations = anticipate(enactedInteraction)
         experiment = selectExperiment(anticipations)
 
-        # this is Environment030
-        if experiment == previousExperiment:
-            result = 'r1'
+        # this is Environment031
+        T1 = 8
+        T2 = 15
+        if cycle <= T1 or cycle > T2:
+            if experiment == 'e1':
+                result = 'r1'
+            else:
+                result = 'r2'
         else:
-            result = 'r2'
-        previousExperiment = experiment
+            if experiment == 'e1':
+                result = 'r2'
+            else:
+                result = 'r1'
 
         enactedInteraction = (experiment, result)
         if interaction_valence[enactedInteraction] >= 0:
