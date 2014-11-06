@@ -18,7 +18,6 @@ experiment = pickExperiment()
 
 for cycle in range(11):
     if mood == 'pained':
-        selfSatisfiedDuration = 0
         experiment = pickExperiment(painful=experiment)
 
     # this is Environment010
