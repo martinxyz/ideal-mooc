@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from collections import OrderedDict
 
 # TODO: not yet working
 
@@ -11,22 +12,25 @@ interaction_valence = {
 primitive_experiments = ['e1', 'e2']
 primitive_interactions = sorted(interaction_valence.keys())
 
-learned = {} # compositeInteraction --> weight
+learned = OrderedDict() # compositeInteraction --> weight
 def learnCompositeInteraction(pre, post):
     ci = (pre, post)
     learned[ci] = learned.get(ci, 0) + 1
     if ci not in interaction_valence:
         interaction_valence[ci] = interaction_valence[pre] + interaction_valence[post]
-    print('learned', pretty(ci), 'weight', learned[ci])
+    print('learned', pretty(ci), 'valence', interaction_valence[ci], 'weight', learned[ci])
 
 def anticipate(context):
-    anticipations = {} # experiment --> proclivity
+    anticipations = OrderedDict() # experiment --> proclivity
     for i in primitive_experiments:
         anticipations[i] = 0
 
     for pre, post in learned:
         if pre in context:
-            proposedExperiment = post[0]
+            if post in primitive_interactions:
+                proposedExperiment = post[0] # propose only the experiment, not the result
+            else:
+                proposedExperiment = post # propose re-enacting the whole thing
             weight = learned[(pre, post)]
             proclivity = weight * interaction_valence[post]
             anticipations[proposedExperiment] = anticipations.get(proposedExperiment, 0) + proclivity
@@ -35,11 +39,9 @@ def anticipate(context):
 def selectExperiment(anticipations):
     l = []
     for experiment in anticipations:
-        print('  anticipation', pretty(experiment))
         proclivity = anticipations[experiment]
         l.append((proclivity, experiment))
-    l.sort(key=lambda x: x[0]) # sort by proclivity
-    l.reverse()
+    l.sort(key=lambda x: -x[0]) # sort by decreasing proclivity
     for proclivity, experiment in l:
         print('propose', pretty(experiment), 'proclivity', proclivity)
     return l[0][1] # pick experiment with highest proclivity
@@ -68,7 +70,7 @@ def environmentGetResult(experiment):
 
 def run():
     hist = [None, None] # history of enacted interactions
-    for cycle in range(25):
+    for cycle in range(30):
 
         context = [] # interactions that are considered "previous"
         if hist[-1]:
@@ -78,17 +80,22 @@ def run():
                 context.append(post)
         if hist[-1] and hist[-2]:
             context.append((hist[-2], hist[-1]))
+        print('context', [pretty(i) for i in context])
 
         anticipations = anticipate(context)
         experiment = selectExperiment(anticipations)
+        print('trying', pretty(experiment))
         enactedInteraction = enact(experiment)
+        if experiment not in primitive_experiments:
+            if enactedInteraction != experiment:
+                enactedInteraction = (experiment, enactedInteraction)
         print('enacted', pretty(enactedInteraction))
 
         if hist[-1]:
             learnCompositeInteraction(hist[-1], enactedInteraction)
         if hist[-1] and hist[-2]:
-            learnCompositeInteraction((hist[-2], hist[-1]), enactedInteraction )
             learnCompositeInteraction(hist[-2], (hist[-1], enactedInteraction))
+            learnCompositeInteraction((hist[-2], hist[-1]), enactedInteraction )
         hist.append(enactedInteraction)
 
         if interaction_valence[enactedInteraction] >= 0:
