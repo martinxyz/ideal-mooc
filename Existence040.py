@@ -2,25 +2,32 @@
 from collections import OrderedDict
 
 # primitive interaction --> valence
-# note: during learning, new (abstract) primitive interactions are added
 primitive_interactions = OrderedDict([
     (('e1', 'r1'), -1),
     (('e1', 'r2'), +1),
     (('e2', 'r1'), -1),
     (('e2', 'r2'), +1),
     ])
-
 primitive_experiments = ['e1', 'e2']
 
+class CompositeInteraction(tuple):
+    "an interaction of the form (preInteraction, postInteraction)"
+    pass # it's just a tuple
+
 def getValence(interaction):
-    if interaction not in primitive_interactions:
+    if isinstance(interaction, CompositeInteraction):
         pre, post = interaction
         return getValence(pre) + getValence(post)
-    return primitive_interactions[interaction]
+    else:
+        experiment, result = interaction
+        if interaction not in primitive_interactions:
+            return getValence(result)
+        else:
+            return primitive_interactions[interaction]
 
 learned = OrderedDict() # compositeInteraction --> weight
 def learn(pre, post):
-    ci = (pre, post)
+    ci = CompositeInteraction((pre, post))
     learned[ci] = learned.get(ci, 0) + 1
     print('learned', pretty(ci), 'valence', getValence(ci), 'weight', learned[ci])
 
@@ -32,10 +39,10 @@ def anticipate(context):
     for (pre, post), weight in learned.items():
         if pre in context:
             proclivity = weight * getValence(post)
-            if post in primitive_interactions:
-                experiment = post[0]
+            if isinstance(post, CompositeInteraction):
+                experiment = post # propose to re-enact the whole thing
             else:
-                experiment = post
+                experiment = post[0] # it's an (experiment, result) interaction
             anticipations[experiment] = anticipations.get(experiment, 0) + proclivity
     return anticipations
 
@@ -60,7 +67,7 @@ def enact(interaction):
         if enacted != pre:
             return enacted
         else:
-            return (pre, enact(post))
+            return CompositeInteraction((pre, enact(post)))
 
 # this is Environment040
 envHist = [None, None]
@@ -73,41 +80,37 @@ def environmentGetResult(experiment):
 
 def run():
     hist = [None, None] # history of enacted interactions
-    for cycle in range(50):
-
+    for cycle in range(30):
         context = [] # interactions that are considered "previous"
         if hist[-1]:
             context.append(hist[-1])
-            if hist[-1] not in primitive_interactions:
+            if isinstance(hist[-1], CompositeInteraction):
                 pre, post = hist[-1]
                 context.append(post)
         if hist[-1] and hist[-2]:
-            context.append((hist[-2], hist[-1]))
+            context.append(CompositeInteraction((hist[-2], hist[-1])))
         print('context', [pretty(i) for i in context])
 
         anticipations = anticipate(context)
         experiment = selectExperiment(anticipations)
-        print('trying experiment', pretty(experiment))
+        print('attempt', pretty(experiment))
         if experiment in primitive_experiments:
             intendedInteraction = (experiment, None)
         else:
             intendedInteraction = experiment
         enacted = enact(intendedInteraction)
-        print('enacted', pretty(enacted))
+        print('enacted', pretty(enacted), 'valence', getValence(enacted))
 
         if enacted != intendedInteraction and experiment not in primitive_experiments:
-            # execution failed
-            enacted = (experiment, enacted)
-            if enacted not in primitive_interactions:
-                # add a new primitive interaction
-                primitive_interactions[enacted] = getValence(enacted[1])
+            # execution of composite interaction failed
+            enacted = (experiment, enacted) # 'enacted' is the result
             print('enacted really', pretty(enacted))
 
         if hist[-1]:
             learn(hist[-1], enacted)
         if hist[-1] and hist[-2]:
-            learn(hist[-2], (hist[-1], enacted))
-            learn((hist[-2], hist[-1]), enacted)
+            learn(hist[-2], CompositeInteraction((hist[-1], enacted)))
+            learn(CompositeInteraction((hist[-2], hist[-1])), enacted)
         hist.append(enacted)
 
         if getValence(enacted) >= 0:
@@ -120,12 +123,11 @@ def run():
 def pretty(thing):
     if isinstance(thing, str):
         return thing
-    else:
-        a, b = thing
-        if not isinstance(a, str):
-            a = '<' + pretty(a) + '>'
-        if not isinstance(b, str):
-            b = '<' + pretty(b) + '>'
-        return a + b
+    a, b = thing
+    if isinstance(thing, CompositeInteraction):
+        return '<' + pretty(a) + pretty(b) + '>'
+    if thing in primitive_interactions:
+        return pretty(a) + pretty(b)
+    return ('(' + pretty(a) + '|' + pretty(b) + ')').upper()
 
 run()
