@@ -57,17 +57,20 @@ def selectExperiment(anticipations):
     return l[0][1] # pick experiment with highest proclivity
 
 def enact(interaction):
-    if interaction[0] in primitive_experiments:
-        experiment = interaction[0]
-        result = environmentGetResult(experiment)
-        return (experiment, result)
-    else:
+    if isinstance(interaction, CompositeInteraction):
         pre, post = interaction
         enacted = enact(pre)
         if enacted != pre:
             return enacted
         else:
             return CompositeInteraction((pre, enact(post)))
+    else:
+        experiment, result = interaction
+        if experiment in primitive_experiments:
+            result = environmentGetResult(experiment)
+        else:
+            result = enact(experiment)
+        return (experiment, result)
 
 # this is Environment040
 envHist = [None, None]
