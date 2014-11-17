@@ -33,8 +33,8 @@ def learn(pre, post):
 
 def anticipate(context):
     anticipations = OrderedDict() # experiment --> proclivity
-    for i in primitive_experiments:
-        anticipations[i] = 0
+    for e in primitive_experiments:
+        anticipations[e] = 0
 
     for (pre, post), weight in learned.items():
         if pre in context:
@@ -47,14 +47,11 @@ def anticipate(context):
     return anticipations
 
 def selectExperiment(anticipations):
-    l = []
-    for experiment in anticipations:
-        proclivity = anticipations[experiment]
-        l.append((proclivity, experiment))
-    l.sort(key=lambda x: -x[0]) # sort by decreasing proclivity
-    for proclivity, experiment in l:
+    l = list(anticipations.items())
+    l.sort(key=lambda x: -x[1]) # sort by decreasing proclivity
+    for experiment, proclivity in l:
         print('propose', pretty(experiment), 'proclivity', proclivity)
-    return l[0][1] # pick experiment with highest proclivity
+    return l[0][0] # pick experiment with highest proclivity
 
 def enact(interaction):
     if isinstance(interaction, CompositeInteraction):
