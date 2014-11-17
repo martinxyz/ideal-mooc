@@ -94,14 +94,14 @@ def run():
         anticipations = anticipate(context)
         experiment = selectExperiment(anticipations)
         print('attempt', pretty(experiment))
-        if experiment in primitive_experiments:
-            intendedInteraction = (experiment, None)
-        else:
+        if isinstance(experiment, CompositeInteraction):
             intendedInteraction = experiment
+        else:
+            intendedInteraction = (experiment, None)
         enacted = enact(intendedInteraction)
         print('enacted', pretty(enacted), 'valence', getValence(enacted))
 
-        if enacted != intendedInteraction and experiment not in primitive_experiments:
+        if enacted != intendedInteraction and isinstance(experiment, CompositeInteraction):
             # execution of composite interaction failed
             enacted = (experiment, enacted) # 'enacted' is the result
             print('enacted really', pretty(enacted))
